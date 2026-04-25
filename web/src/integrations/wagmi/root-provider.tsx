@@ -1,7 +1,7 @@
 import { WagmiProvider, createConfig, http } from 'wagmi'
 import { mainnet } from 'wagmi/chains'
 import { ConnectKitProvider, getDefaultConfig } from 'connectkit'
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { defineChain } from 'viem'
 
 const monadTestnet = defineChain({
@@ -33,13 +33,20 @@ const config = createConfig(
 )
 
 export function Web3Provider({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false)
+
   useEffect(() => {
+    setMounted(true)
     console.log('[Web3Provider] Mounted')
   }, [])
 
   return (
     <WagmiProvider config={config}>
-      <ConnectKitProvider>{children}</ConnectKitProvider>
+      {mounted ? (
+        <ConnectKitProvider>{children}</ConnectKitProvider>
+      ) : (
+        <>{children}</>
+      )}
     </WagmiProvider>
   )
 }
