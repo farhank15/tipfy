@@ -16,7 +16,6 @@ import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as ApiUploadthingRouteImport } from './routes/api/uploadthing'
 import { Route as WidgetsTypeAddressRouteImport } from './routes/widgets/$type.$address'
 import { Route as ApiDonationTestRouteImport } from './routes/api/donation/test'
-import { Route as ApiDonationRecordRouteImport } from './routes/api/donation/record'
 import { Route as ApiAuthVerifyRouteImport } from './routes/api/auth/verify'
 import { Route as ApiAuthNonceRouteImport } from './routes/api/auth/nonce'
 import { Route as ApiAuthMeRouteImport } from './routes/api/auth/me'
@@ -58,11 +57,6 @@ const WidgetsTypeAddressRoute = WidgetsTypeAddressRouteImport.update({
 const ApiDonationTestRoute = ApiDonationTestRouteImport.update({
   id: '/api/donation/test',
   path: '/api/donation/test',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiDonationRecordRoute = ApiDonationRecordRouteImport.update({
-  id: '/api/donation/record',
-  path: '/api/donation/record',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthVerifyRoute = ApiAuthVerifyRouteImport.update({
@@ -114,7 +108,6 @@ export interface FileRoutesByFullPath {
   '/api/auth/me': typeof ApiAuthMeRoute
   '/api/auth/nonce': typeof ApiAuthNonceRoute
   '/api/auth/verify': typeof ApiAuthVerifyRoute
-  '/api/donation/record': typeof ApiDonationRecordRoute
   '/api/donation/test': typeof ApiDonationTestRoute
   '/widgets/$type/$address': typeof WidgetsTypeAddressRoute
 }
@@ -131,7 +124,6 @@ export interface FileRoutesByTo {
   '/api/auth/me': typeof ApiAuthMeRoute
   '/api/auth/nonce': typeof ApiAuthNonceRoute
   '/api/auth/verify': typeof ApiAuthVerifyRoute
-  '/api/donation/record': typeof ApiDonationRecordRoute
   '/api/donation/test': typeof ApiDonationTestRoute
   '/widgets/$type/$address': typeof WidgetsTypeAddressRoute
 }
@@ -149,7 +141,6 @@ export interface FileRoutesById {
   '/api/auth/me': typeof ApiAuthMeRoute
   '/api/auth/nonce': typeof ApiAuthNonceRoute
   '/api/auth/verify': typeof ApiAuthVerifyRoute
-  '/api/donation/record': typeof ApiDonationRecordRoute
   '/api/donation/test': typeof ApiDonationTestRoute
   '/widgets/$type/$address': typeof WidgetsTypeAddressRoute
 }
@@ -168,7 +159,6 @@ export interface FileRouteTypes {
     | '/api/auth/me'
     | '/api/auth/nonce'
     | '/api/auth/verify'
-    | '/api/donation/record'
     | '/api/donation/test'
     | '/widgets/$type/$address'
   fileRoutesByTo: FileRoutesByTo
@@ -185,7 +175,6 @@ export interface FileRouteTypes {
     | '/api/auth/me'
     | '/api/auth/nonce'
     | '/api/auth/verify'
-    | '/api/donation/record'
     | '/api/donation/test'
     | '/widgets/$type/$address'
   id:
@@ -202,7 +191,6 @@ export interface FileRouteTypes {
     | '/api/auth/me'
     | '/api/auth/nonce'
     | '/api/auth/verify'
-    | '/api/donation/record'
     | '/api/donation/test'
     | '/widgets/$type/$address'
   fileRoutesById: FileRoutesById
@@ -220,7 +208,6 @@ export interface RootRouteChildren {
   ApiAuthMeRoute: typeof ApiAuthMeRoute
   ApiAuthNonceRoute: typeof ApiAuthNonceRoute
   ApiAuthVerifyRoute: typeof ApiAuthVerifyRoute
-  ApiDonationRecordRoute: typeof ApiDonationRecordRoute
   ApiDonationTestRoute: typeof ApiDonationTestRoute
   WidgetsTypeAddressRoute: typeof WidgetsTypeAddressRoute
 }
@@ -274,13 +261,6 @@ declare module '@tanstack/react-router' {
       path: '/api/donation/test'
       fullPath: '/api/donation/test'
       preLoaderRoute: typeof ApiDonationTestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/donation/record': {
-      id: '/api/donation/record'
-      path: '/api/donation/record'
-      fullPath: '/api/donation/record'
-      preLoaderRoute: typeof ApiDonationRecordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/verify': {
@@ -348,7 +328,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthMeRoute: ApiAuthMeRoute,
   ApiAuthNonceRoute: ApiAuthNonceRoute,
   ApiAuthVerifyRoute: ApiAuthVerifyRoute,
-  ApiDonationRecordRoute: ApiDonationRecordRoute,
   ApiDonationTestRoute: ApiDonationTestRoute,
   WidgetsTypeAddressRoute: WidgetsTypeAddressRoute,
 }

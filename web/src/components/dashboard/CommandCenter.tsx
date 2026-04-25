@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
-import { GlitchText } from '../ui/GlitchText'
+
+
 import { TipFyVaultABI } from '../../lib/TipFyVaultABI'
 
 const TIPFY_VAULT_ADDRESS = (import.meta.env.VITE_VAULT_ADDRESS || '0x0000000000000000000000000000000000000000') as `0x${string}`

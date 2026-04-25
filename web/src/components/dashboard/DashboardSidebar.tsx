@@ -9,7 +9,7 @@ import {
   LogOut,
   Wallet,
   Menu,
-  X,
+
   User,
   ArrowRightLeft
 } from 'lucide-react'

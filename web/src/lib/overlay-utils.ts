@@ -4,19 +4,18 @@ import crypto from 'node:crypto'
 
 export const recordDonationServerFn = createServerFn({
   method: 'POST',
-}).handler(async ({ data: { txHash, sender, receiverId, amount, message } }) => {
+}).handler(async (ctx: { data: any }) => {
+    const { txHash, sender, receiverId, amount, message } = ctx.data
     const { db } = await import('#/db/index')
     const { donation, profile } = await import('#/db/schema')
     const { getAblyInstance } = await import('./ably-utils')
 
     try {
-      // 1. Get user address for channel naming
       const userProfile = await db.query.profile.findFirst({
         where: eq(profile.id, receiverId),
       })
       if (!userProfile) throw new Error('Receiver not found')
 
-      // 2. Save to database
       await db.insert(donation).values({
         profileId: receiverId,
         amount: amount.toString(),
@@ -27,7 +26,6 @@ export const recordDonationServerFn = createServerFn({
         status: 'SUCCESS',
       })
 
-      // 3. Trigger Overlay via Ably
       const ably = getAblyInstance()
       const channel = ably.channels.get(`donations:${userProfile.walletAddress}`)
       
@@ -49,14 +47,16 @@ export const recordDonationServerFn = createServerFn({
 
 export const getOverlayConfigServerFn = createServerFn({
   method: 'GET',
-}).handler(async ({ data: { type } }) => {
+}).handler(async (ctx: { data: any }) => {
+    const { type } = ctx.data
     const { getOverlayConfig } = await import('./db-actions.server')
-    return await getOverlayConfig(type)
+    return await getOverlayConfig(type) as any
   })
 
 export const getPublicOverlayConfigServerFn = createServerFn({
   method: 'GET',
-}).handler(async ({ data: { type, address } }) => {
+}).handler(async (ctx: { data: any }) => {
+    const { type, address } = ctx.data
     const { db } = await import('#/db/index')
     const { overlayConfigs, profile } = await import('#/db/schema')
 
@@ -72,12 +72,13 @@ export const getPublicOverlayConfigServerFn = createServerFn({
       ),
     })
 
-    return config || null
+    return (config || null) as any
   })
 
 export const getLatestDonationServerFn = createServerFn({
   method: 'GET',
-}).handler(async ({ data: { address } }) => {
+}).handler(async (ctx: { data: any }) => {
+    const { address } = ctx.data
     const { db } = await import('#/db/index')
     const { donation, profile } = await import('#/db/schema')
 
@@ -91,13 +92,13 @@ export const getLatestDonationServerFn = createServerFn({
       orderBy: [desc(donation.createdAt)],
     })
 
-    return latest || null
+    return latest as any
   })
 
 export const getDonationsServerFn = createServerFn({ method: 'GET' }).handler(
   async (): Promise<any[]> => {
     const { getDonations } = await import('./db-actions.server')
-    return await getDonations()
+    return await getDonations() as any[]
   },
 )
 
@@ -105,49 +106,54 @@ export const getDashboardStatsServerFn = createServerFn({
   method: 'GET',
 }).handler(async (): Promise<any> => {
   const { getDashboardStats } = await import('./db-actions.server')
-  return await getDashboardStats()
+  return await getDashboardStats() as any
 })
 
 export const saveOverlayConfigServerFn = createServerFn({
   method: 'POST',
-}).handler(async ({ data: { type, config, isEnabled } }) => {
+}).handler(async (ctx: { data: any }) => {
+    const { type, config, isEnabled } = ctx.data
     const { saveOverlayConfig } = await import('./db-actions.server')
     return await saveOverlayConfig(type, config, isEnabled)
   })
 
 export const saveVotingServerFn = createServerFn({
   method: 'POST',
-}).handler(async ({ data }) => {
+}).handler(async (ctx: { data: any }) => {
     const { saveVoting } = await import('./db-actions.server')
-    return await saveVoting(data)
+    return await saveVoting(ctx.data) as any
   })
 
 export const getActiveVotingServerFn = createServerFn({
   method: 'GET',
-}).handler(async ({ data: { profileId } }) => {
+}).handler(async (ctx: { data: any }) => {
+    const { profileId } = ctx.data
     const { getActiveVoting } = await import('./db-actions.server')
-    return await getActiveVoting(profileId)
+    return await getActiveVoting(profileId) as any
   })
 
 export const submitVoteServerFn = createServerFn({
   method: 'POST',
-}).handler(async ({ data: { votingId, optionIndex, voterAddress } }) => {
+}).handler(async (ctx: { data: any }) => {
+    const { votingId, optionIndex, voterAddress } = ctx.data
     const { submitVote } = await import('./db-actions.server')
     return await submitVote(votingId, optionIndex, voterAddress)
   })
 
 export const getVotingResultsServerFn = createServerFn({
   method: 'GET',
-}).handler(async ({ data: { votingId } }) => {
+}).handler(async (ctx: { data: any }) => {
+    const { votingId } = ctx.data
     const { getVotingResults } = await import('./db-actions.server')
-    return await getVotingResults(votingId)
+    return await getVotingResults(votingId) as any[]
   })
 
 export const getLeaderboardServerFn = createServerFn({
   method: 'GET',
-}).handler(async ({ data: { profileId, timeRange, startDate } }) => {
+}).handler(async (ctx: { data: any }) => {
+    const { profileId, timeRange, startDate } = ctx.data
     const { getLeaderboardData } = await import('./db-actions.server')
-    return await getLeaderboardData(profileId, timeRange, startDate)
+    return await getLeaderboardData(profileId, timeRange, startDate) as any[]
   })
 
 export const seedDefaultOverlays = async (profileId: number) => {
@@ -188,9 +194,9 @@ export const seedDefaultOverlays = async (profileId: number) => {
 
     for (const type of ALL_TYPES) {
       const existing = await db.query.overlayConfigs.findFirst({
-        where: and(
-          eq(overlayConfigs.profileId, profileId),
-          eq(overlayConfigs.type, type),
+        where: (p: any, { eq, and }: any) => and(
+          eq(p.profileId, profileId),
+          eq(p.type, type),
         ),
       })
 

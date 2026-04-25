@@ -1,25 +1,15 @@
 import Ably from 'ably'
-import { env } from '#/env'
 
-let ably: Ably.Rest | null = null
+let ably: Ably.Realtime | null = null
 
-function getAblyClient() {
+export const getAblyInstance = () => {
   if (!ably) {
-    ably = new Ably.Rest(env.ABLY_API_KEY)
+    const apiKey = process.env.ABLY_API_KEY
+    if (!apiKey) {
+      console.warn('ABLY_API_KEY is missing. Real-time features will be disabled.')
+      // Return a mock or handle gracefully
+    }
+    ably = new Ably.Realtime({ key: apiKey })
   }
   return ably
-}
-
-export async function publishDonationAlert(walletAddress: string, donationData: any) {
-  try {
-    const client = getAblyClient()
-    const channelName = `donations:${walletAddress}`
-    const channel = client.channels.get(channelName)
-    
-    await channel.publish('new-donation', donationData)
-    console.log(`[Ably] Published donation to channel: ${channelName}`)
-  } catch (error) {
-    console.error('[Ably] Publish failed:', error)
-    throw error
-  }
 }

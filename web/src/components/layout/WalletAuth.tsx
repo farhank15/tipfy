@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../../store/auth'
 import { createServerFn } from '@tanstack/react-start'
 
@@ -9,15 +8,9 @@ const getNonceFn = createServerFn({ method: 'GET' }).handler(async () => {
   return { nonce: `tipfy-${Math.random().toString(36).substring(2)}` }
 })
 
-// Definisikan tipe input secara eksplisit agar TS tidak bingung
-interface LoginInput {
-  address: string
-  signature: string
-  nonce: string
-}
-
 const loginFn = createServerFn({ method: 'POST' })
-  .handler(async ({ data }: { data: LoginInput }) => {
+  .handler(async (ctx: any) => {
+    const data = ctx.data
     return { 
       user: { 
         address: data.address, 
