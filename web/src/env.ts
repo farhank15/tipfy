@@ -5,10 +5,12 @@ export const env = createEnv({
   server: {
     DATABASE_URL: z.string().min(1),
     GROQ_API_KEY: z.string().min(1),
-    GCS_BUCKET_NAME: z.string().min(1),
-    GOOGLE_APPLICATION_CREDENTIALS: z.string().min(1),
+    GCS_BUCKET_NAME: z.string().min(1).optional(),
+    GOOGLE_APPLICATION_CREDENTIALS: z.string().min(1).optional(),
     ABLY_API_KEY: z.string().min(1),
     UPLOADTHING_TOKEN: z.string().min(1),
+    BETTER_AUTH_SECRET: z.string().min(1).optional(),
+    BETTER_AUTH_URL: z.string().min(1).optional(),
   },
   clientPrefix: 'VITE_',
   client: {
