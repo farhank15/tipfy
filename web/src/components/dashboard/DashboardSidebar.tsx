@@ -9,10 +9,11 @@ import {
   LogOut,
   Wallet,
   Menu,
-
   User,
-  ArrowRightLeft
-} from 'lucide-react'
+  ArrowRightLeft,
+  X
+  } from 'lucide-react'
+
 import { useState, useEffect } from 'react'
 import { useAuthStore } from '../../store/auth'
 
