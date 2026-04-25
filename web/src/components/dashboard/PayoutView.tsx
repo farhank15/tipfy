@@ -2,14 +2,11 @@ import { useForm } from '@tanstack/react-form'
 import { updatePayoutSettingsServerFn } from '../../lib/payout-utils'
 import { Wallet, ShieldCheck, Loader2, Zap } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import { TipFyVaultABI } from '../../lib/TipFyVaultABI'
 
 const VAULT_ADDRESS = import.meta.env.VITE_VAULT_ADDRESS || '0x0000000000000000000000000000000000000000'
 
-function PayoutViewInner({ initialAddress, initialStaking, Web3 }: any) {
+function PayoutViewInner({ initialAddress, initialStaking }: any) {
   const [success, setSuccess] = useState(false)
-  const { writeContract, data: hash, isPending: isTxPending } = Web3.useWriteContract()
-  const { isLoading: isConfirming } = Web3.useWaitForTransactionReceipt({ hash })
 
   const form = useForm({
     defaultValues: {
@@ -18,15 +15,6 @@ function PayoutViewInner({ initialAddress, initialStaking, Web3 }: any) {
     },
     onSubmit: async ({ value }) => {
       try {
-        if (value.isStakingEnabled !== initialStaking) {
-          writeContract({
-            address: VAULT_ADDRESS as `0x${string}`,
-            abi: TipFyVaultABI,
-            functionName: 'toggleStaking',
-            args: [value.isStakingEnabled],
-          })
-        }
-
         await (updatePayoutSettingsServerFn as any)({ data: value })
         setSuccess(true)
         setTimeout(() => setSuccess(false), 3000)
@@ -39,7 +27,7 @@ function PayoutViewInner({ initialAddress, initialStaking, Web3 }: any) {
   return (
     <div className="max-w-2xl space-y-12">
       <div>
-        <h2 className="text-4xl font-black italic uppercase tracking-tighter">
+        <h2 className="text-4xl font-black italic uppercase tracking-tighter text-white">
           Protocol_<span className="text-neon-cyan">Configuration</span>
         </h2>
         <p className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.4em] mt-2">
@@ -102,7 +90,7 @@ function PayoutViewInner({ initialAddress, initialStaking, Web3 }: any) {
         </div>
 
         <div className="p-8 bg-white/2 border border-white/5 space-y-6 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none text-white">
             <Wallet size={80} />
           </div>
 
@@ -125,12 +113,12 @@ function PayoutViewInner({ initialAddress, initialStaking, Web3 }: any) {
 
           <button
             type="submit"
-            disabled={form.state.isSubmitting || isTxPending || isConfirming}
+            disabled={form.state.isSubmitting}
             className="w-full py-4 bg-neon-cyan text-black font-black uppercase tracking-[0.3em] italic skew-x--10 hover:bg-white transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
             <span className="skew-x-10 flex items-center gap-2">
-              {(form.state.isSubmitting || isTxPending || isConfirming) && <Loader2 className="animate-spin" size={16} />}
-              {form.state.isSubmitting || isTxPending || isConfirming ? 'Syncing_Protocols...' : 'Save Configuration'}
+              {form.state.isSubmitting && <Loader2 className="animate-spin" size={16} />}
+              {form.state.isSubmitting ? 'Updating_Grid...' : 'Save Configuration'}
             </span>
           </button>
 
@@ -144,28 +132,5 @@ function PayoutViewInner({ initialAddress, initialStaking, Web3 }: any) {
 }
 
 export const PayoutView = ({ initialAddress, initialStaking }: any) => {
-  const [Web3, setWeb3] = useState<any>(null)
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const { useWriteContract, useWaitForTransactionReceipt } = await import('wagmi')
-        setWeb3({ useWriteContract, useWaitForTransactionReceipt })
-      } catch (e) {
-        console.error('PayoutView Web3 Load failed', e)
-      }
-    }
-    load()
-  }, [])
-
-  if (!Web3) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <Zap size={40} className="text-zinc-800 animate-pulse" />
-        <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.4em]">Initializing_Safe_Vault...</p>
-      </div>
-    )
-  }
-
-  return <PayoutViewInner initialAddress={initialAddress} initialStaking={initialStaking} Web3={Web3} />
+  return <PayoutViewInner initialAddress={initialAddress} initialStaking={initialStaking} />
 }

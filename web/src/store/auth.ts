@@ -1,16 +1,17 @@
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
+import { persist } from 'zustand/middleware'
+import { logoutServerFn } from '../lib/auth-utils'
 
-interface User {
+interface AuthUser {
   address: string
-  username?: string | null
+  username: string | null
 }
 
 interface AuthState {
-  user: User | null
+  user: AuthUser | null
   isPending: boolean
   isVerifying: boolean
-  setUser: (user: User | null) => void
+  setUser: (user: AuthUser | null) => void
   setPending: (isPending: boolean) => void
   setVerifying: (isVerifying: boolean) => void
   logout: () => Promise<void>
@@ -27,9 +28,8 @@ export const useAuthStore = create<AuthState>()(
       setVerifying: (isVerifying) => set({ isVerifying }),
       logout: async () => {
         try {
-          await fetch('/api/auth/logout', { method: 'POST' })
+          await logoutServerFn()
           set({ user: null })
-          // Hapus secara eksplisit untuk keamanan tambahan
           localStorage.removeItem('tipfy-auth-storage')
         } catch (err) {
           console.error('[AuthStore] Logout failed:', err)
@@ -39,7 +39,6 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'tipfy-auth-storage',
-      storage: createJSONStorage(() => localStorage),
     }
   )
 )

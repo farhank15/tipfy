@@ -1,9 +1,32 @@
 import { createServerFn } from '@tanstack/react-start'
+import { deleteCookie } from '@tanstack/react-start/server'
+
+export const logoutServerFn = createServerFn({ method: 'POST' })
+  .handler(async () => {
+    deleteCookie('session_id')
+    return { success: true }
+  })
 
 export const checkProfileServerFn = createServerFn({ method: 'GET' })
   .handler(async () => {
     const { checkProfileExistence: serverAction } = await import('./db-actions.server')
     return await serverAction()
+  })
+
+export const syncSessionServerFn = createServerFn({ method: 'GET' })
+  .handler(async () => {
+    const { checkProfileExistence: serverAction } = await import('./db-actions.server')
+    const res = await serverAction()
+    
+    if (res.isAuthenticated && res.walletAddress) {
+      return {
+        user: {
+          address: res.walletAddress,
+          username: res.slug || null
+        }
+      }
+    }
+    return null
   })
 
 export const getPublicProfileServerFn = createServerFn({ method: 'GET' })

@@ -18,8 +18,12 @@ function ProfilePageInner({
 
   const { useAccount, useSendTransaction, useWriteContract, useWaitForTransactionReceipt, parseEther } = Web3Lib
   const { isConnected, address: senderAddress } = useAccount()
+  const [isCustom, setIsPaused] = useState(false) // Reusing as toggle custom
+  const [customAmount, setCustomAmount] = useState('')
+
+  const { ConnectKitButton } = Web3Lib
   
-  // Hook for direct transfer
+  // ... rest of logic
   const { sendTransactionAsync } = useSendTransaction()
   // Hook for vault donation
   const { writeContractAsync } = useWriteContract()
@@ -115,24 +119,49 @@ function ProfilePageInner({
 
             <div className="grid grid-cols-1 gap-6 pt-4">
               <div className="space-y-4">
-                <label className="text-xs font-black uppercase tracking-[0.3em] text-zinc-500">
-                  Select_Amount (MON)
-                </label>
-                <div className="grid grid-cols-4 gap-2">
-                  {['0.1', '1', '5', '10'].map((val) => (
-                    <button
-                      key={val}
-                      onClick={() => setAmount(val)}
-                      className={`py-3 font-black transition-all ${
-                        amount === val 
-                        ? 'bg-neon-cyan text-black' 
-                        : 'bg-zinc-900 text-zinc-500 hover:text-neon-cyan border border-zinc-800'
-                      }`}
-                    >
-                      {val}
-                    </button>
-                  ))}
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-black uppercase tracking-[0.3em] text-zinc-500">
+                    Select_Amount (MON)
+                  </label>
+                  <button 
+                    onClick={() => setIsPaused(!isCustom)}
+                    className="text-[10px] font-black uppercase tracking-widest text-neon-cyan hover:text-white transition-colors"
+                  >
+                    {isCustom ? 'Use_Presets' : 'Custom_Amount'}
+                  </button>
                 </div>
+
+                {isCustom ? (
+                  <div className="relative group">
+                    <input 
+                      type="number"
+                      value={customAmount}
+                      onChange={(e) => {
+                        setCustomAmount(e.target.value)
+                        setAmount(e.target.value)
+                      }}
+                      placeholder="Enter amount..."
+                      className="w-full bg-zinc-900/50 border border-neon-cyan/30 p-4 text-white font-black italic focus:border-neon-cyan outline-none transition-all skew-x--5"
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-neutral-600 uppercase">MON</div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-4 gap-2">
+                    {['0.1', '1', '5', '10'].map((val) => (
+                      <button
+                        key={val}
+                        onClick={() => setAmount(val)}
+                        className={`py-3 font-black transition-all skew-x--5 ${
+                          amount === val 
+                          ? 'bg-neon-cyan text-black' 
+                          : 'bg-zinc-900 text-zinc-500 hover:text-neon-cyan border border-zinc-800'
+                        }`}
+                      >
+                        <span className="skew-x-5">{val}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4">
@@ -143,22 +172,35 @@ function ProfilePageInner({
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Enter your transmission..."
-                  className="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-mono focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan outline-none transition-all resize-none h-32"
+                  className="w-full bg-zinc-900/50 border border-zinc-800 p-4 text-white font-mono focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan outline-none transition-all resize-none h-32 skew-x--2"
                 />
               </div>
 
-              <button
-                onClick={handleDonate}
-                disabled={isDonating || isConfirming || !isConnected}
-                className="group relative w-full py-6 bg-transparent overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <div className="absolute inset-0 border-2 border-neon-pink group-hover:border-neon-cyan transition-colors" />
-                <div className="absolute inset-0 bg-neon-pink/10 group-hover:bg-neon-cyan/10 transition-colors" />
-                
-                <span className="relative z-10 text-xl font-black uppercase tracking-[0.5em] text-neon-pink group-hover:text-neon-cyan transition-colors">
-                  {isDonating ? (isConfirming ? 'Confirming_Node...' : 'Transmitting...') : 'Initiate_Donation'}
-                </span>
-              </button>
+              {!isConnected ? (
+                <ConnectKitButton.Custom>
+                  {({ show }: any) => (
+                    <button
+                      onClick={show}
+                      className="w-full py-6 bg-neon-cyan text-black font-black uppercase tracking-[0.5em] italic skew-x--10 hover:bg-white transition-all"
+                    >
+                      Authorize_Wallet_to_Donate
+                    </button>
+                  )}
+                </ConnectKitButton.Custom>
+              ) : (
+                <button
+                  onClick={handleDonate}
+                  disabled={isDonating || isConfirming || !amount || Number(amount) <= 0}
+                  className="group relative w-full py-6 bg-transparent overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="absolute inset-0 border-2 border-neon-pink group-hover:border-neon-cyan transition-colors" />
+                  <div className="absolute inset-0 bg-neon-pink/10 group-hover:bg-neon-cyan/10 transition-colors" />
+                  
+                  <span className="relative z-10 text-xl font-black uppercase tracking-[0.5em] text-neon-pink group-hover:text-neon-cyan transition-colors">
+                    {isDonating ? (isConfirming ? 'Confirming_Node...' : 'Transmitting...') : 'Initiate_Donation'}
+                  </span>
+                </button>
+              )}
               
               {isConfirming && (
                 <div className="text-center animate-pulse">
@@ -197,16 +239,18 @@ function ProfilePage() {
     
     const loadWeb3 = async () => {
       try {
-        const [wagmi, viem] = await Promise.all([
+        const [wagmi, viem, connectkit] = await Promise.all([
           import('wagmi'),
-          import('viem')
+          import('viem'),
+          import('connectkit')
         ])
         setWeb3Lib({
           useSendTransaction: wagmi.useSendTransaction,
           useWriteContract: wagmi.useWriteContract,
           useWaitForTransactionReceipt: wagmi.useWaitForTransactionReceipt,
           useAccount: wagmi.useAccount,
-          parseEther: viem.parseEther
+          parseEther: viem.parseEther,
+          ConnectKitButton: connectkit.ConnectKitButton
         })
       } catch (e) {
         console.error('Web3 load failed:', e)

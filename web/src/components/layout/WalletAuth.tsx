@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useAuthStore } from '../../store/auth'
 import { createServerFn } from '@tanstack/react-start'
+import { setCookie } from '@tanstack/react-start/server'
 
 // Server Functions for Auth
 const getNonceFn = createServerFn({ method: 'GET' }).handler(async () => {
@@ -12,13 +13,36 @@ const loginFn = createServerFn({ method: 'POST' })
   .handler(async (ctx: { data: any }) => {
     const { address } = ctx.data
     const { db } = await import('#/db/index')
-    const { profile } = await import('#/db/schema')
+    const { profile, sessions, users } = await import('#/db/schema')
     const { eq } = await import('drizzle-orm')
+    const crypto = await import('node:crypto')
 
     try {
-      // Cek apakah profile sudah ada
+      const existingUser = await db.query.users.findFirst({
+        where: eq(users.walletAddress, address)
+      })
+      if (!existingUser) {
+        await db.insert(users).values({ walletAddress: address })
+      }
+
       const userProfile = await db.query.profile.findFirst({
         where: eq(profile.walletAddress, address)
+      })
+
+      const sessionId = crypto.randomUUID()
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+
+      await db.insert(sessions).values({
+        id: sessionId,
+        walletAddress: address,
+        expiresAt: expiresAt
+      })
+
+      setCookie('session_id', sessionId, {
+        path: '/',
+        expires: expiresAt,
+        httpOnly: true,
+        sameSite: 'lax',
       })
 
       return { 
@@ -29,7 +53,7 @@ const loginFn = createServerFn({ method: 'POST' })
       }
     } catch (e) {
       console.error('Login database error:', e)
-      return { user: { address, username: null } }
+      throw new Error('Internal Server Error during login')
     }
   })
 
@@ -44,7 +68,6 @@ function WalletAuthInner({
   const isVerifying = useRef(false)
   const { user, setUser, logout } = useAuthStore()
 
-  // Auto-logout when wallet is disconnected but user is still "logged in" in Zustand
   useEffect(() => {
     if (!isConnected && user) {
       logout()

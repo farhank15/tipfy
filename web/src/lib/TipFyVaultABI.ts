@@ -1,279 +1,62 @@
 export const TipFyVaultABI = [
   {
-    inputs: [
-      { internalType: 'address', name: '_aavePool', type: 'address' },
-      { internalType: 'address', name: '_wmon', type: 'address' },
+    "inputs": [
+      { "internalType": "address", "name": "", "type": "address" }
     ],
-    stateMutability: 'nonpayable',
-    type: 'constructor',
-  },
-  { inputs: [], name: 'InsufficientBalance', type: 'error' },
-  { inputs: [], name: 'MinimumDonationNotMet', type: 'error' },
-  {
-    inputs: [{ internalType: 'address', name: 'owner', type: 'address' }],
-    name: 'OwnableInvalidOwner',
-    type: 'error',
-  },
-  {
-    inputs: [{ internalType: 'address', name: 'account', type: 'address' }],
-    name: 'OwnableUnauthorizedAccount',
-    type: 'error',
-  },
-  { inputs: [], name: 'ReentrancyGuardReentrantCall', type: 'error' },
-  { inputs: [], name: 'TransferFailed', type: 'error' },
-  { inputs: [], name: 'YieldNotReady', type: 'error' },
-  { inputs: [], name: 'ZeroBalance', type: 'error' },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: 'address',
-        name: 'donor',
-        type: 'address',
-      },
-      {
-        indexed: true,
-        internalType: 'address',
-        name: 'streamer',
-        type: 'address',
-      },
-      {
-        indexed: false,
-        internalType: 'string',
-        name: 'nickname',
-        type: 'string',
-      },
-      {
-        indexed: false,
-        internalType: 'string',
-        name: 'message',
-        type: 'string',
-      },
-      {
-        indexed: false,
-        internalType: 'string',
-        name: 'mediaUrl',
-        type: 'string',
-      },
-      {
-        indexed: false,
-        internalType: 'uint256',
-        name: 'totalAmount',
-        type: 'uint256',
-      },
-      {
-        indexed: false,
-        internalType: 'uint256',
-        name: 'feeCut',
-        type: 'uint256',
-      },
-      { indexed: false, internalType: 'bool', name: 'isStaked', type: 'bool' },
+    "name": "balances",
+    "outputs": [
+      { "internalType": "uint256", "name": "", "type": "uint256" }
     ],
-    name: 'DonationReceived',
-    type: 'event',
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: 'address',
-        name: 'previousOwner',
-        type: 'address',
-      },
-      {
-        indexed: true,
-        internalType: 'address',
-        name: 'newOwner',
-        type: 'address',
-      },
+    "inputs": [
+      { "internalType": "uint256", "name": "_amount", "type": "uint256" }
     ],
-    name: 'OwnershipTransferred',
-    type: 'event',
+    "name": "withdraw",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
   {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: 'address',
-        name: 'streamer',
-        type: 'address',
-      },
-      { indexed: false, internalType: 'bool', name: 'isEnabled', type: 'bool' },
+    "inputs": [
+      { "internalType": "address", "name": "_streamer", "type": "address" }
     ],
-    name: 'StakingToggled',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: 'address',
-        name: 'streamer',
-        type: 'address',
-      },
-      {
-        indexed: false,
-        internalType: 'uint256',
-        name: 'amount',
-        type: 'uint256',
-      },
+    "name": "calculateYield",
+    "outputs": [
+      { "internalType": "uint256", "name": "", "type": "uint256" }
     ],
-    name: 'Withdrawn',
-    type: 'event',
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: 'address',
-        name: 'streamer',
-        type: 'address',
-      },
-      {
-        indexed: false,
-        internalType: 'uint256',
-        name: 'yieldAmount',
-        type: 'uint256',
-      },
+    "inputs": [
+      { "internalType": "address", "name": "_aavePool", "type": "address" },
+      { "internalType": "address", "name": "_wmon", "type": "address" }
     ],
-    name: 'YieldClaimed',
-    type: 'event',
+    "stateMutability": "nonpayable",
+    "type": "constructor"
   },
   {
-    inputs: [],
-    name: 'STAKE_DURATION',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'YIELD_APR',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'aavePool',
-    outputs: [{ internalType: 'contract IPool', name: '', type: 'address' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [{ internalType: 'address', name: '', type: 'address' }],
-    name: 'balances',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [{ internalType: 'address', name: '_streamer', type: 'address' }],
-    name: 'calculateYield',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'claimYield',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { internalType: 'address payable', name: '_streamer', type: 'address' },
-      { internalType: 'string', name: '_nickname', type: 'string' },
-      { internalType: 'string', name: '_message', type: 'string' },
-      { internalType: 'string', name: '_mediaUrl', type: 'string' },
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "streamer", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }
     ],
-    name: 'donate',
-    outputs: [],
-    stateMutability: 'payable',
-    type: 'function',
+    "name": "Withdrawn",
+    "type": "event"
   },
   {
-    inputs: [{ internalType: 'address', name: '', type: 'address' }],
-    name: 'isStakingEnabled',
-    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [{ internalType: 'address', name: '', type: 'address' }],
-    name: 'lastStakeTimestamp',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'owner',
-    outputs: [{ internalType: 'address', name: '', type: 'address' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'platformFeeBps',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'renounceOwnership',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [{ internalType: 'address', name: '_aavePool', type: 'address' }],
-    name: 'setAavePool',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [{ internalType: 'bool', name: '_enable', type: 'bool' }],
-    name: 'toggleStaking',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [{ internalType: 'address', name: 'newOwner', type: 'address' }],
-    name: 'transferOwnership',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [{ internalType: 'uint256', name: '_amount', type: 'uint256' }],
-    name: 'withdraw',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [{ internalType: 'uint256', name: '_amount', type: 'uint256' }],
-    name: 'withdrawPlatformYield',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'wmon',
-    outputs: [{ internalType: 'contract IWETH', name: '', type: 'address' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  { stateMutability: 'payable', type: 'receive' },
+    "inputs": [
+      { "internalType": "address", "name": "_streamer", "type": "address" },
+      { "internalType": "string", "name": "_nickname", "type": "string" },
+      { "internalType": "string", "name": "_message", "type": "string" },
+      { "internalType": "string", "name": "_mediaUrl", "type": "string" }
+    ],
+    "name": "donate",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  }
 ] as const

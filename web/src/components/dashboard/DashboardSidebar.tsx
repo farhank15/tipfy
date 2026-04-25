@@ -25,7 +25,8 @@ function SidebarInner({
   setIsMobileOpen, 
   user, 
   logout,
-  Web3
+  Web3,
+  setShowQRModal
 }: any) {
   const { isConnected } = Web3.useAccount()
   const { data: balance } = Web3.useBalance({
@@ -39,8 +40,6 @@ function SidebarInner({
     { id: 'OVERLAYS', label: 'Overlays', icon: <Zap size={20} /> },
     { id: 'SETTINGS', label: 'Settlement', icon: <ShieldCheck size={20} /> },
   ]
-
-  const [showQRModal, setShowQRModal] = useState(false)
 
   const handleMenuClick = (item: any) => {
     if (item.id === 'PROFILE') {
@@ -67,53 +66,23 @@ function SidebarInner({
 
   return (
     <div className="h-full flex flex-col bg-black border-r border-white/5 relative overflow-hidden">
-      {/* QR MODAL */}
-      <AnimatePresence>
-        {showQRModal && (
-          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowQRModal(false)}
-              className="absolute inset-0 bg-black/90 backdrop-blur-xl" 
-            />
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative bg-white p-12 max-w-sm w-full space-y-6 flex flex-col items-center skew-x--2"
-            >
-              <button 
-                onClick={() => setShowQRModal(false)}
-                className="absolute top-4 right-4 text-black hover:text-red-500 transition-colors"
-              >
-                <X size={24} />
-              </button>
-              <div className="w-64 h-64">
-                <img src={QR_CODE_URL} alt="Enlarged QR" className="w-full h-full" />
-              </div>
-              <div className="text-center space-y-2">
-                <p className="text-black font-black uppercase tracking-widest text-[10px]">Transmission_Link</p>
-                <p className="text-black font-mono text-[10px] break-all opacity-50">{profileUrl}</p>
-              </div>
-              <button 
-                onClick={() => {
-                  navigator.clipboard.writeText(profileUrl)
-                  alert('Transmission link copied to grid!')
-                }}
-                className="w-full py-3 bg-black text-white font-black uppercase tracking-widest text-[10px] hover:bg-zinc-800 transition-colors"
-              >
-                Copy_Link
-              </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_100%,rgba(0,255,242,0.03),transparent_50%)]" />
       
       <div className="p-6 mb-8 flex items-center justify-between relative z-10">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setActiveTab('OVERVIEW')}
+            className={`p-2 transition-all ${activeTab === 'OVERVIEW' ? 'text-neon-cyan glow-cyan' : 'text-neutral-600 hover:text-white'}`}
+          >
+            <LayoutDashboard size={20} />
+          </button>
+          <button 
+            onClick={() => handleMenuClick({ id: 'PROFILE' })}
+            className="p-2 text-neutral-600 hover:text-neon-cyan transition-all"
+          >
+            <User size={20} />
+          </button>
+        </div>
         <button 
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="hidden md:block p-2 hover:bg-white/5 text-neutral-500 hover:text-neon-cyan transition-all"
@@ -221,7 +190,7 @@ function SidebarInner({
   )
 }
 
-export const DashboardSidebar = ({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: (t: string) => void }) => {
+export const DashboardSidebar = ({ activeTab, setActiveTab, showQRModal, setShowQRModal }: { activeTab: string, setActiveTab: (t: string) => void, showQRModal?: boolean, setShowQRModal?: (v: boolean) => void }) => {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const { user, logout } = useAuthStore()
@@ -265,7 +234,7 @@ export const DashboardSidebar = ({ activeTab, setActiveTab }: { activeTab: strin
         </button>
       </div>
 
-      <div className={`hidden md:block h-screen sticky top-0 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-72'}`}>
+      <div className={`hidden md:block h-screen sticky top-0 transition-all duration-300 z-40 ${isCollapsed ? 'w-20' : 'w-72'}`}>
         <SidebarInner 
           activeTab={activeTab}
           setActiveTab={setActiveTab}
@@ -275,6 +244,7 @@ export const DashboardSidebar = ({ activeTab, setActiveTab }: { activeTab: strin
           user={user}
           logout={logout}
           Web3={Web3}
+          setShowQRModal={setShowQRModal}
         />
       </div>
 
@@ -295,6 +265,7 @@ export const DashboardSidebar = ({ activeTab, setActiveTab }: { activeTab: strin
               user={user}
               logout={logout}
               Web3={Web3}
+              setShowQRModal={setShowQRModal}
             />
           </motion.div>
         )}
