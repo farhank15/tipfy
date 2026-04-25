@@ -18,7 +18,10 @@ export const getPublicProfileServerFn = createServerFn({ method: 'GET' })
         },
       })
 
-      if (!userProfile) return null
+      if (!userProfile) {
+        console.warn(`[ServerFn] Profile not found for slug: ${username}`)
+        return null
+      }
 
       return {
         id: userProfile.id,
@@ -30,8 +33,12 @@ export const getPublicProfileServerFn = createServerFn({ method: 'GET' })
         isStakingEnabled: (userProfile as any).payoutSettings?.isStakingEnabled || false,
         payoutAddress: (userProfile as any).payoutSettings?.payoutAddress || userProfile.walletAddress,
       }
-    } catch (e) {
-      console.error('Server Fn Error:', e)
+    } catch (e: any) {
+      console.error('[ServerFn Error Details]:', {
+        message: e.message,
+        stack: e.stack,
+        username
+      })
       return null
     }
   })
