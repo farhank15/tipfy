@@ -9,13 +9,27 @@ const getNonceFn = createServerFn({ method: 'GET' }).handler(async () => {
 })
 
 const loginFn = createServerFn({ method: 'POST' })
-  .handler(async (ctx: any) => {
-    const data = ctx.data
-    return { 
-      user: { 
-        address: data.address, 
-        username: null 
-      } 
+  .handler(async (ctx: { data: any }) => {
+    const { address } = ctx.data
+    const { db } = await import('#/db/index')
+    const { profile } = await import('#/db/schema')
+    const { eq } = await import('drizzle-orm')
+
+    try {
+      // Cek apakah profile sudah ada
+      const userProfile = await db.query.profile.findFirst({
+        where: eq(profile.walletAddress, address)
+      })
+
+      return { 
+        user: { 
+          address: address, 
+          username: userProfile?.slug || null 
+        } 
+      }
+    } catch (e) {
+      console.error('Login database error:', e)
+      return { user: { address, username: null } }
     }
   })
 
@@ -28,7 +42,15 @@ function WalletAuthInner({
   const { signMessageAsync } = useSignMessage()
   const navigate = useNavigate()
   const isVerifying = useRef(false)
-  const { user, setUser } = useAuthStore()
+  const { user, setUser, logout } = useAuthStore()
+
+  // Auto-logout when wallet is disconnected but user is still "logged in" in Zustand
+  useEffect(() => {
+    if (!isConnected && user) {
+      logout()
+      navigate({ to: '/' })
+    }
+  }, [isConnected, user, logout, navigate])
 
   useEffect(() => {
     const verify = async () => {
@@ -39,7 +61,6 @@ function WalletAuthInner({
           const message = `Sign this message to authenticate with Tipfy: ${nonce}`
           const signature = await signMessageAsync({ message })
 
-          // Kirim data sebagai objek yang dibungkus properti 'data'
           const res = await loginFn({ 
             data: { 
               address: address as string, 

@@ -29,8 +29,11 @@ export const useAuthStore = create<AuthState>()(
         try {
           await fetch('/api/auth/logout', { method: 'POST' })
           set({ user: null })
+          // Hapus secara eksplisit untuk keamanan tambahan
+          localStorage.removeItem('tipfy-auth-storage')
         } catch (err) {
           console.error('[AuthStore] Logout failed:', err)
+          set({ user: null })
         }
       },
     }),

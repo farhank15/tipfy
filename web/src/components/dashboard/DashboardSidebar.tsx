@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   LayoutDashboard, 
@@ -39,17 +39,77 @@ function SidebarInner({
     { id: 'SETTINGS', label: 'Settlement', icon: <ShieldCheck size={20} /> },
   ]
 
+  const [showQRModal, setShowQRModal] = useState(false)
+
   const handleMenuClick = (item: any) => {
     if (item.id === 'PROFILE') {
-      window.open(`/u/${user?.username || user?.address}`, '_blank')
+      const slug = user?.username || user?.address
+      window.open(`/u/${slug}`, '_blank')
       return
     }
     setActiveTab(item.id)
     setIsMobileOpen(false)
   }
 
+  const profileUrl = typeof window !== 'undefined' 
+    ? `${window.location.origin}/u/${user?.username || user?.address}`
+    : ''
+
+  const QR_CODE_URL = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(profileUrl)}&color=000&bgcolor=fff`
+
+  const navigate = useNavigate()
+  
+  const handleLogout = async () => {
+    await logout()
+    navigate({ to: '/' })
+  }
+
   return (
     <div className="h-full flex flex-col bg-black border-r border-white/5 relative overflow-hidden">
+      {/* QR MODAL */}
+      <AnimatePresence>
+        {showQRModal && (
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowQRModal(false)}
+              className="absolute inset-0 bg-black/90 backdrop-blur-xl" 
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative bg-white p-12 max-w-sm w-full space-y-6 flex flex-col items-center skew-x--2"
+            >
+              <button 
+                onClick={() => setShowQRModal(false)}
+                className="absolute top-4 right-4 text-black hover:text-red-500 transition-colors"
+              >
+                <X size={24} />
+              </button>
+              <div className="w-64 h-64">
+                <img src={QR_CODE_URL} alt="Enlarged QR" className="w-full h-full" />
+              </div>
+              <div className="text-center space-y-2">
+                <p className="text-black font-black uppercase tracking-widest text-[10px]">Transmission_Link</p>
+                <p className="text-black font-mono text-[10px] break-all opacity-50">{profileUrl}</p>
+              </div>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(profileUrl)
+                  alert('Transmission link copied to grid!')
+                }}
+                className="w-full py-3 bg-black text-white font-black uppercase tracking-widest text-[10px] hover:bg-zinc-800 transition-colors"
+              >
+                Copy_Link
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_100%,rgba(0,255,242,0.03),transparent_50%)]" />
       
       <div className="p-6 mb-8 flex items-center justify-between relative z-10">
@@ -90,9 +150,26 @@ function SidebarInner({
         ))}
       </div>
 
-      <div className="p-4 mt-auto border-t border-white/5 relative z-10">
+      <div className="p-4 mt-auto border-t border-white/5 relative z-10 space-y-4">
+        {!isCollapsed && (
+          <button 
+            onClick={() => setShowQRModal(true)}
+            className="w-full p-4 bg-white/5 border border-white/10 flex flex-col items-center gap-3 hover:bg-white/10 transition-all group"
+          >
+            <p className="text-[8px] font-black uppercase tracking-[0.3em] text-neutral-500 group-hover:text-neon-cyan transition-colors">Your_Transmission_QR</p>
+            <div className="w-24 h-24 bg-white p-2">
+              <img 
+                src={QR_CODE_URL} 
+                alt="QR Code"
+                className="w-full h-full"
+              />
+            </div>
+            <p className="text-[7px] font-mono text-neutral-600 break-all text-center">{profileUrl}</p>
+          </button>
+        )}
+
         <div className={`
-          p-4 bg-white/2 border border-white/5 rounded-none skew-x--5 mb-4
+          p-4 bg-white/2 border border-white/5 rounded-none skew-x--5
           ${isCollapsed ? 'flex justify-center' : ''}
         `}>
           <div className="skew-x-5 space-y-3">
@@ -129,7 +206,7 @@ function SidebarInner({
         </div>
 
         <button 
-          onClick={() => logout()}
+          onClick={handleLogout}
           className={`
             w-full flex items-center gap-4 px-4 py-4 text-neutral-600 hover:text-red-500 transition-all group
             ${isCollapsed ? 'justify-center' : ''}
