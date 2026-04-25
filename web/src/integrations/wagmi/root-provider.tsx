@@ -5,13 +5,20 @@ export function Web3Provider({ children }: { children: ReactNode }) {
   const [Web3Components, setWeb3Components] = useState<any>(null)
 
   useEffect(() => {
-    // Hanya jalankan ini di browser
     const loadWeb3 = async () => {
       try {
-        const { WagmiProvider, createConfig, http } = await import('wagmi')
-        const { mainnet } = await import('wagmi/chains')
-        const { ConnectKitProvider, getDefaultConfig } = await import('connectkit')
-        const { defineChain } = await import('viem')
+        // Gunakan import standar, guard di vite.config.ts akan menangani sisi server
+        const [
+          { WagmiProvider, createConfig, http },
+          { mainnet },
+          { ConnectKitProvider, getDefaultConfig },
+          { defineChain }
+        ] = await Promise.all([
+          import('wagmi'),
+          import('wagmi/chains'),
+          import('connectkit'),
+          import('viem')
+        ])
 
         const monadTestnet = defineChain({
           id: 10143,
@@ -50,9 +57,16 @@ export function Web3Provider({ children }: { children: ReactNode }) {
     loadWeb3()
   }, [])
 
+  // Sangat Penting: Jika belum mounted, jangan render children yang menggunakan hooks Web3
+  // Ini untuk mencegah error "useConfig must be used within WagmiProvider"
   if (!mounted || !Web3Components) {
-    // Saat SSR (di Vercel), kita hanya render children tanpa provider
-    return <>{children}</>
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+         <div className="text-neon-cyan font-black uppercase tracking-[0.5em] animate-pulse">
+           Initializing_Grid_Nodes...
+         </div>
+      </div>
+    )
   }
 
   const { WagmiProvider, ConnectKitProvider, config } = Web3Components

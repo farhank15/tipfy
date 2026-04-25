@@ -1,166 +1,182 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Copy, Wallet, TrendingUp, Share2, Settings, User, LogOut } from 'lucide-react'
-import { useAccount, useBalance } from 'wagmi'
-import { useState } from 'react'
-import { formatUnits } from 'viem'
-import { GlitchText } from '../ui/GlitchText'
-import { useUIStore } from '../../store/ui'
-import { Link } from '@tanstack/react-router'
-import { useAuthStore } from '../../store/auth'
+import { X, User, Shield, Wallet, Copy, ExternalLink, Loader2, Zap } from 'lucide-react'
+import { useState, useEffect } from 'react'
 
-export const ProfileModal = () => {
-  const { showProfile, setShowProfile } = useUIStore()
-  const { address } = useAccount()
-  const { data: balance } = useBalance({ address })
-  const { user, logout } = useAuthStore()
+function ProfileModalInner({ 
+  user, 
+  onClose, 
+  Web3 
+}: any) {
   const [copied, setCopied] = useState(false)
+  const { data: balance } = Web3.useBalance({
+    address: user?.address as `0x${string}`,
+  })
 
-  const copyAddress = () => {
-    if (address) {
-      navigator.clipboard.writeText(address)
+  const handleCopy = () => {
+    if (user?.address) {
+      navigator.clipboard.writeText(user.address)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     }
   }
 
-  const handleLogout = async () => {
-    await logout()
-    setShowProfile(false)
-    window.location.href = '/'
-  }
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-black/80 backdrop-blur-md" 
+      />
+      
+      <motion.div 
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        className="w-full max-w-lg bg-zinc-950 border border-white/10 relative overflow-hidden skew-x--2"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neon-cyan via-neon-pink to-neon-cyan animate-pulse" />
+        
+        <div className="p-8 skew-x-2">
+          <div className="flex justify-between items-start mb-8">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Shield size={14} className="text-neon-cyan" />
+                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neon-cyan">Identity_Verified</span>
+              </div>
+              <h2 className="text-4xl font-black italic uppercase tracking-tighter text-white">Profile_<span className="text-neon-cyan">Nexus</span></h2>
+            </div>
+            <button 
+              onClick={onClose}
+              className="p-2 hover:bg-white/5 text-neutral-500 hover:text-white transition-all"
+            >
+              <X size={24} />
+            </button>
+          </div>
 
-  const formattedBalance = balance
-    ? parseFloat(formatUnits(balance.value, balance.decimals)).toFixed(4)
-    : '0.0000'
+          <div className="space-y-8">
+            <div className="flex items-center gap-6">
+              <div className="w-24 h-24 bg-white/5 border-2 border-neon-cyan/20 p-1 skew-x--10">
+                <div className="w-full h-full bg-black flex items-center justify-center overflow-hidden">
+                  {user?.avatarUrl ? (
+                    <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" />
+                  ) : (
+                    <User size={40} className="text-neutral-700" />
+                  )}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-2xl font-black italic text-white uppercase">@{user?.username || 'Anonymous'}</h3>
+                <div className="flex items-center gap-2 text-neon-cyan/60">
+                  <div className="w-1.5 h-1.5 rounded-full bg-neon-cyan animate-ping" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Active_Node</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              <div className="p-4 bg-white/2 border border-white/5 space-y-3 skew-x--5">
+                <div className="skew-x-5 flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Wallet size={14} className="text-neon-pink" />
+                    <span className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Wallet_Address</span>
+                  </div>
+                  <button 
+                    onClick={handleCopy}
+                    className="text-[10px] font-black text-neon-cyan hover:text-white transition-colors uppercase tracking-widest"
+                  >
+                    {copied ? 'Copied!' : <Copy size={14} />}
+                  </button>
+                </div>
+                <div className="skew-x-5 font-mono text-xs text-white bg-black/40 p-3 border border-white/5 break-all">
+                  {user?.address || '0x...'}
+                </div>
+              </div>
+
+              <div className="p-4 bg-white/2 border border-white/5 space-y-3 skew-x--5">
+                <div className="skew-x-5 flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Zap size={14} className="text-yellow-500" />
+                    <span className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Available_Balance</span>
+                  </div>
+                  <span className="text-[10px] font-black text-neon-pink uppercase tracking-widest animate-pulse">Live_Sync</span>
+                </div>
+                <div className="skew-x-5 flex items-end gap-2">
+                  <span className="text-3xl font-black italic text-white leading-none">
+                    {balance ? Number(Web3.formatEther(balance.value)).toFixed(4) : '0.0000'}
+                  </span>
+                  <span className="text-xs font-black text-neutral-600 uppercase mb-1">MON</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <a 
+                href={`https://testnet.monadexplorer.com/address/${user?.address}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-4 bg-white/5 hover:bg-neon-cyan/10 border border-white/10 text-white text-[10px] font-black uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-2 skew-x--10"
+              >
+                <span className="skew-x-10 flex items-center gap-2">
+                  <ExternalLink size={14} /> View_on_Explorer
+                </span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
+export const ProfileModal = ({ 
+  isOpen, 
+  onClose, 
+  user 
+}: { 
+  isOpen: boolean
+  onClose: () => void
+  user: any 
+}) => {
+  const [Web3, setWeb3] = useState<any>(null)
+
+  useEffect(() => {
+    if (isOpen) {
+      const load = async () => {
+        try {
+          const [wagmi, viem] = await Promise.all([
+            import('wagmi'),
+            import('viem')
+          ])
+          setWeb3({
+            useBalance: wagmi.useBalance,
+            formatEther: viem.formatEther
+          })
+        } catch (e) {
+          console.error('ProfileModal Web3 Load failed', e)
+        }
+      }
+      load()
+    }
+  }, [isOpen])
+
+  if (!isOpen) return null
 
   return (
     <AnimatePresence>
-      {showProfile && (
-        <div className="fixed inset-0 z-9999 flex justify-end">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowProfile(false)}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
-          />
-
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="relative w-full max-w-87.5 h-full bg-[#080808] border-l border-white/10 shadow-2xl flex flex-col"
-          >
-            <div className="p-6 border-b border-white/5 bg-white/2 flex items-center justify-between">
-              <div>
-                <GlitchText text="TERMINAL_v1.0" className="text-neon-cyan text-[10px] font-black tracking-[0.4em] uppercase" />
-                <h2 className="text-lg font-black text-white italic truncate max-w-50">
-                  {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'GUEST_USER'}
-                </h2>
-              </div>
-              <button onClick={() => setShowProfile(false)} className="p-2 text-neutral-500 hover:text-neon-pink transition-colors">
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-6">
-              <div className="p-4 bg-white/2 border border-white/5 space-y-1 relative group overflow-hidden skew-x--5 ml-2">
-                <div className="skew-x-5">
-                  <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest flex items-center gap-2">
-                    <Wallet size={12} className="text-neon-cyan" /> Wallet_Balance
-                  </p>
-                  <div className="flex items-baseline gap-2 mt-1">
-                    <span className="text-2xl font-black text-white">{formattedBalance}</span>
-                    <span className="text-[10px] font-bold text-neon-cyan uppercase tracking-tighter">{balance?.symbol || 'MON'}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <p className="px-2 text-[9px] font-black text-neutral-600 uppercase tracking-[0.4em] mb-4">Nav_Interface</p>
-                
-                {user?.slug && (
-                  <MenuLink 
-                    to={`/u/${user.slug}`} 
-                    icon={<User size={18} />} 
-                    label="My Public Profile" 
-                    color="cyan"
-                    onClick={() => setShowProfile(false)}
-                  />
-                )}
-                
-                <MenuLink 
-                  to="/dashboard" 
-                  icon={<TrendingUp size={18} />} 
-                  label="Creator Dashboard" 
-                  color="white"
-                  onClick={() => setShowProfile(false)}
-                />
-
-                <MenuItem icon={<Share2 size={18} />} label="Copy Tip Link" color="white" />
-                <MenuItem icon={<Settings size={18} />} label="Account Settings" color="white" />
-                
-                <div className="pt-4 border-t border-white/5 mt-4">
-                  <button 
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-4 p-4 text-neutral-500 hover:text-neon-pink hover:bg-neon-pink/5 transition-all group skew-x--5"
-                  >
-                    <div className="skew-x-5 flex items-center gap-4">
-                      <LogOut size={18} className="group-hover:animate-pulse" />
-                      <span className="text-[11px] font-black uppercase tracking-[0.2em]">Sign Out</span>
-                    </div>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6 bg-[#0c0c0c] border-t border-white/10 z-10">
-              <button 
-                onClick={copyAddress}
-                className="w-full py-3 bg-black border border-white/5 hover:border-neon-cyan/50 text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 text-neutral-500 overflow-hidden"
-              >
-                {copied ? (
-                  <span className="text-neon-cyan italic text-[8px] animate-pulse">Buffer_Updated_Successfully</span>
-                ) : (
-                  <div className="flex items-center gap-2 truncate px-2">
-                    <Copy size={12} className="shrink-0" /> 
-                    <span className="truncate">{address}</span>
-                  </div>
-                )}
-              </button>
-            </div>
-          </motion.div>
+      {!Web3 ? (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md">
+           <Loader2 size={40} className="text-neon-cyan animate-spin" />
         </div>
+      ) : (
+        <ProfileModalInner 
+          user={user} 
+          onClose={onClose} 
+          Web3={Web3} 
+        />
       )}
     </AnimatePresence>
-  )
-}
-
-function MenuItem({ icon, label, color }: { icon: React.ReactNode, label: string, color: string }) {
-  const colorClass = color === 'cyan' ? 'text-neon-cyan' : color === 'pink' ? 'text-neon-pink' : 'text-neutral-400'
-  return (
-    <button className={`w-full flex items-center gap-4 p-4 hover:bg-white/3 transition-all group skew-x--5 ${colorClass}`}>
-      <div className="skew-x-5 flex items-center gap-4">
-        <div className="group-hover:scale-110 transition-transform">{icon}</div>
-        <span className="text-[11px] font-black uppercase tracking-[0.2em] text-neutral-400 group-hover:text-white transition-colors">{label}</span>
-      </div>
-    </button>
-  )
-}
-
-function MenuLink({ to, icon, label, color, onClick }: { to: string, icon: React.ReactNode, label: string, color: string, onClick?: () => void }) {
-  const colorClass = color === 'cyan' ? 'text-neon-cyan' : color === 'pink' ? 'text-neon-pink' : 'text-neutral-400'
-  return (
-    <Link 
-      to={to as any} 
-      onClick={onClick}
-      className={`w-full flex items-center gap-4 p-4 hover:bg-white/3 transition-all group skew-x--5 ${colorClass}`}
-    >
-      <div className="skew-x-5 flex items-center gap-4">
-        <div className="group-hover:scale-110 transition-transform">{icon}</div>
-        <span className="text-[11px] font-black uppercase tracking-[0.2em] text-neutral-400 group-hover:text-white transition-colors">{label}</span>
-      </div>
-    </Link>
   )
 }

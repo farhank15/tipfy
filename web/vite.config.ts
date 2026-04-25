@@ -13,12 +13,35 @@ const config = defineConfig({
   },
   plugins: [
     devtools(),
-    nitro({ rollupConfig: { external: [/^@sentry\//] } }),
+    nitro({ 
+      rollupConfig: { 
+        external: [
+          /^@sentry\//,
+          'wagmi',
+          'connectkit',
+          'viem',
+          'framer-motion',
+          '@aave/account',
+          'post-robot'
+        ] 
+      } 
+    }),
     neon,
     tailwindcss(),
     tanstackStart(),
     viteReact(),
   ],
+  ssr: {
+    // Memaksa library ini agar tidak diproses oleh SSR Vite sama sekali
+    external: [
+      'wagmi',
+      'connectkit',
+      'viem',
+      'wagmi/chains',
+      '@aave/account',
+      'post-robot'
+    ]
+  }
 })
 
 export default config

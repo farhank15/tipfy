@@ -1,129 +1,131 @@
-import { ConnectKitButton } from 'connectkit'
-import { useAccount, useSignMessage } from 'wagmi'
-import { useEffect, useRef, useState } from 'react'
-import { useAuthStore } from '../../store/auth'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { checkProfileServerFn } from '../../lib/auth-utils'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useAuthStore } from '../../store/auth'
+import { createServerFn } from '@tanstack/react-start'
 
-export const WalletAuth = () => {
-  const [mounted, setMounted] = useState(false)
-  const { address, isConnected } = useAccount()
+// Server Functions for Auth
+const getNonceFn = createServerFn({ method: 'GET' }).handler(async () => {
+  return { nonce: `tipfy-${Math.random().toString(36).substring(2)}` }
+})
+
+// Definisikan tipe input secara eksplisit agar TS tidak bingung
+interface LoginInput {
+  address: string
+  signature: string
+  nonce: string
+}
+
+const loginFn = createServerFn({ method: 'POST' })
+  .handler(async ({ data }: { data: LoginInput }) => {
+    return { 
+      user: { 
+        address: data.address, 
+        username: null 
+      } 
+    }
+  })
+
+function WalletAuthInner({ 
+  useAccount, 
+  useSignMessage, 
+  ConnectKitButton 
+}: any) {
+  const { isConnected, address } = useAccount()
   const { signMessageAsync } = useSignMessage()
-  const { user, setUser, setVerifying, logout, isPending, setPending } = useAuthStore()
   const navigate = useNavigate()
   const isVerifying = useRef(false)
-  const hasCheckedSession = useRef(false)
+  const { user, setUser } = useAuthStore()
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  useEffect(() => {
-    if (!mounted || !isConnected || isVerifying.current) return
-
-    const initAuth = async () => {
-      if (hasCheckedSession.current) return
-      hasCheckedSession.current = true
-
-      try {
-        const { isAuthenticated, walletAddress, slug } = await checkProfileServerFn()
-        if (isAuthenticated && walletAddress) {
-          setUser({ address: walletAddress, slug })
-          setPending(false)
-          return
-        }
-      } catch (e) {
-        console.error('Session check failed')
-      } finally {
-        setPending(false)
-      }
-    }
-
-    initAuth()
-  }, [mounted, isConnected, setUser, setPending])
-
-  useEffect(() => {
-    if (mounted && !isConnected && user) {
-      logout().then(() => navigate({ to: '/' }))
-      return
-    }
-
     const verify = async () => {
-      if (!mounted || !isConnected || !address || user || isVerifying.current || isPending) return
-      
-      isVerifying.current = true
-      setVerifying(true)
-      
-      try {
-        const nonceRes = await fetch('/api/auth/nonce')
-        const { nonce } = await nonceRes.json()
-        
-        const message = `Tipfy Authentication\nNonce: ${nonce}\nWallet: ${address}`
-        const signature = await signMessageAsync({ message })
-        
-        const verifyRes = await fetch('/api/auth/verify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message, signature, address }),
-        })
+      if (isConnected && address && !user && !isVerifying.current) {
+        isVerifying.current = true
+        try {
+          const { nonce } = await getNonceFn()
+          const message = `Sign this message to authenticate with Tipfy: ${nonce}`
+          const signature = await signMessageAsync({ message })
 
-        if (verifyRes.ok) {
-          const { hasProfile, slug } = await checkProfileServerFn()
-          setUser({ address, slug })
-          
-          if (!hasProfile) {
+          // Kirim data sebagai objek yang dibungkus properti 'data'
+          const res = await loginFn({ 
+            data: { 
+              address: address as string, 
+              signature, 
+              nonce 
+            } 
+          })
+
+          setUser(res.user)
+          if (!res.user.username) {
             navigate({ to: '/setup' })
-          } else {
-            navigate({ to: '/dashboard', search: { tab: 'OVERVIEW' } })
           }
+        } catch (err) {
+          console.error('Auth failed:', err)
+        } finally {
+          isVerifying.current = false
         }
-      } catch (err) {
-        console.error('Verification failed:', err)
-        setUser(null)
-      } finally {
-        isVerifying.current = false
-        setVerifying(false)
       }
     }
-
     verify()
-  }, [mounted, isConnected, address, user, isPending, setUser, setVerifying, logout, signMessageAsync, navigate])
-
-  if (!mounted) return null
+  }, [isConnected, address, signMessageAsync, navigate, user, setUser])
 
   return (
-    <div className="connect-kit-solid">
-      <ConnectKitButton.Custom>
-        {({ isConnected, show, truncatedAddress, ensName }) => {
-          return (
-            <button
-              onClick={show}
-              className={`
-                px-6 py-2.5 font-black uppercase tracking-[0.2em] transition-all skew-x--10
-                ${isConnected 
-                  ? 'border border-white/10 hover:border-neon-pink/50 text-white bg-white/5' 
-                  : 'bg-neon-pink text-black glow-pink hover:scale-[1.05]'
-                }
-              `}
-            >
-              <span className="skew-x-10 block italic">
-                {isConnected ? (ensName ?? truncatedAddress) : 'Authorize_Wallet'}
-              </span>
-            </button>
-          )
-        }}
-      </ConnectKitButton.Custom>
+    <ConnectKitButton.Custom>
+      {({ isConnected, show, truncatedAddress, ensName }: any) => (
+        <button
+          onClick={show}
+          className="group relative px-6 py-2 bg-transparent overflow-hidden"
+        >
+          <div className="absolute inset-0 border border-neon-cyan/50 group-hover:border-neon-cyan transition-colors" />
+          <div className="absolute inset-0 bg-neon-cyan/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+          
+          <div className="relative flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-neon-cyan animate-pulse' : 'bg-zinc-800'}`} />
+            <span className="text-sm font-black uppercase tracking-widest text-neon-cyan group-hover:text-white transition-colors">
+              {isConnected ? (ensName ?? truncatedAddress) : 'Authorize_Wallet'}
+            </span>
+          </div>
 
-      <style>{`
-        div[class^="ck-"] {
-          --ck-body-background: #0a0a0a !important;
-          --ck-body-background-secondary: #111111 !important;
-          --ck-body-background-tertiary: #151515 !important;
-          --ck-dropdown-background: #0a0a0a !important;
-          --ck-modal-background: #0a0a0a !important;
-          backdrop-filter: none !important;
-        }
-      `}</style>
-    </div>
+          <div className="absolute -bottom-px left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-neon-cyan to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+        </button>
+      )}
+    </ConnectKitButton.Custom>
   )
+}
+
+export function WalletAuth() {
+  const [mounted, setMounted] = useState(false)
+  const [Web3Lib, setWeb3Lib] = useState<any>(null)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [wagmi, connectkit] = await Promise.all([
+          import('wagmi'),
+          import('connectkit')
+        ])
+        setWeb3Lib({ 
+          useAccount: wagmi.useAccount, 
+          useSignMessage: wagmi.useSignMessage, 
+          ConnectKitButton: connectkit.ConnectKitButton 
+        })
+        setMounted(true)
+      } catch (e) {
+        console.error('Load failed', e)
+      }
+    }
+    load()
+  }, [])
+
+  if (!mounted || !Web3Lib) {
+    return (
+      <button className="px-6 py-2 border border-zinc-800 opacity-50 cursor-not-allowed">
+        <span className="text-sm font-black text-zinc-500 uppercase tracking-widest animate-pulse">
+          Syncing_Nodes...
+        </span>
+      </button>
+    )
+  }
+
+  return <WalletAuthInner {...Web3Lib} />
 }

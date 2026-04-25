@@ -25,7 +25,6 @@ import {
   getOverlayConfigServerFn,
   saveOverlayConfigServerFn,
   saveVotingServerFn,
-  uploadToBucketServerFn,
 } from '../../../lib/overlay-utils'
 
 export const OverlayEditor = ({
@@ -41,11 +40,9 @@ export const OverlayEditor = ({
   const [loading, setLoading] = useState(true)
   const [saveStatus, setSaveStatus] = useState<string | null>(null)
   const [showSimulator, setShowSimulator] = useState(false)
-  const [uploading, setUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [simulatorKey, setSimulatorKey] = useState(0)
   const [testingAlert, setTestingAlert] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const nodeRef = useRef(null)
 
   useEffect(() => {
@@ -149,35 +146,6 @@ export const OverlayEditor = ({
     }
     loadConfig()
   }, [type])
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    setUploading(true)
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const res = await (uploadToBucketServerFn as any)({
-        data: formData,
-      })
-
-      const newSound = {
-        name: file.name.split('.')[0],
-        url: res.url,
-        minAmount: 10,
-      }
-      const currentSounds = form.getFieldValue('sounds') || []
-      form.setFieldValue('sounds', [...currentSounds, newSound])
-    } catch (err) {
-      console.error('Upload failed:', err)
-      alert('Gagal mengupload file ke storage. Silakan coba lagi.')
-    } finally {
-      setUploading(false)
-      if (fileInputRef.current) fileInputRef.current.value = ''
-    }
-  }
 
   const handleRemoveSound = (idx: number) => {
     const current = form.getFieldValue('sounds')
@@ -929,14 +897,6 @@ export const OverlayEditor = ({
                             Media audio kustom di decentralized storage.
                           </p>
                         </div>
-
-                        <input
-                          type="file"
-                          ref={fileInputRef}
-                          onChange={handleFileChange}
-                          accept="audio/*"
-                          className="hidden"
-                        />
 
                         <UploadButton
                           endpoint="audioUploader"

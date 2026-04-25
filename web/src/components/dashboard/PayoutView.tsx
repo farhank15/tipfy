@@ -1,23 +1,15 @@
 import { useForm } from '@tanstack/react-form'
 import { updatePayoutSettingsServerFn } from '../../lib/payout-utils'
-import { Wallet, ShieldCheck, Loader2 } from 'lucide-react'
-import { useState } from 'react'
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { Wallet, ShieldCheck, Loader2, Zap } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { TipFyVaultABI } from '../../lib/TipFyVaultABI'
 
-// Update with real deployed address
-const TIPFY_VAULT_ADDRESS = '0x0000000000000000000000000000000000000000'
+const VAULT_ADDRESS = import.meta.env.VITE_VAULT_ADDRESS || '0x0000000000000000000000000000000000000000'
 
-export const PayoutView = ({
-  initialAddress,
-  initialStaking,
-}: {
-  initialAddress: string
-  initialStaking?: boolean
-}) => {
+function PayoutViewInner({ initialAddress, initialStaking, Web3 }: any) {
   const [success, setSuccess] = useState(false)
-  const { data: hash, writeContract, isPending: isTxPending } = useWriteContract()
-  const { isLoading: isConfirming } = useWaitForTransactionReceipt({ hash })
+  const { writeContract, data: hash, isPending: isTxPending } = Web3.useWriteContract()
+  const { isLoading: isConfirming } = Web3.useWaitForTransactionReceipt({ hash })
 
   const form = useForm({
     defaultValues: {
@@ -26,10 +18,9 @@ export const PayoutView = ({
     },
     onSubmit: async ({ value }) => {
       try {
-        // 1. Update Smart Contract if status changed
         if (value.isStakingEnabled !== initialStaking) {
           writeContract({
-            address: TIPFY_VAULT_ADDRESS as `0x${string}`,
+            address: VAULT_ADDRESS as `0x${string}`,
             abi: TipFyVaultABI,
             functionName: 'toggleStaking',
             args: [value.isStakingEnabled],
@@ -64,7 +55,6 @@ export const PayoutView = ({
         }}
         className="space-y-10"
       >
-        {/* Donation Mode Selection */}
         <div className="space-y-4">
           <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest flex items-center gap-2">
             <ShieldCheck size={14} className="text-neon-cyan" /> Select
@@ -83,22 +73,11 @@ export const PayoutView = ({
                   >
                     <div className="skew-x-5 space-y-2">
                       <div className="flex justify-between items-center">
-                        <span
-                          className={`text-[10px] font-black uppercase tracking-widest ${!field.state.value ? 'text-neon-cyan' : 'text-neutral-500'}`}
-                        >
-                          Direct_P2P
-                        </span>
-                        {!field.state.value && (
-                          <div className="w-2 h-2 rounded-full bg-neon-cyan animate-pulse" />
-                        )}
+                        <span className={`text-[10px] font-black uppercase tracking-widest ${!field.state.value ? 'text-neon-cyan' : 'text-neutral-500'}`}>Direct_P2P</span>
+                        {!field.state.value && <div className="w-2 h-2 rounded-full bg-neon-cyan animate-pulse" />}
                       </div>
-                      <p className="text-[14px] font-bold text-white uppercase italic">
-                        Immediate Settlement
-                      </p>
-                      <p className="text-[9px] text-neutral-500 leading-relaxed uppercase font-bold tracking-tight">
-                        Donations are sent directly to your wallet. Zero delay,
-                        zero yield.
-                      </p>
+                      <p className="text-[14px] font-bold text-white uppercase italic">Immediate Settlement</p>
+                      <p className="text-[9px] text-neutral-500 leading-relaxed uppercase font-bold tracking-tight">Donations are sent directly to your wallet. Zero delay, zero yield.</p>
                     </div>
                   </button>
 
@@ -109,22 +88,11 @@ export const PayoutView = ({
                   >
                     <div className="skew-x-5 space-y-2">
                       <div className="flex justify-between items-center">
-                        <span
-                          className={`text-[10px] font-black uppercase tracking-widest ${field.state.value ? 'text-neon-pink' : 'text-neutral-500'}`}
-                        >
-                          Vault_Staking
-                        </span>
-                        {field.state.value && (
-                          <div className="w-2 h-2 rounded-full bg-neon-pink animate-pulse" />
-                        )}
+                        <span className={`text-[10px] font-black uppercase tracking-widest ${field.state.value ? 'text-neon-pink' : 'text-neutral-500'}`}>Vault_Staking</span>
+                        {field.state.value && <div className="w-2 h-2 rounded-full bg-neon-pink animate-pulse" />}
                       </div>
-                      <p className="text-[14px] font-bold text-white uppercase italic">
-                        3.5% APR Yield
-                      </p>
-                      <p className="text-[9px] text-neutral-500 leading-relaxed uppercase font-bold tracking-tight">
-                        Funds are held in the secure Tipfy Vault (Aave V3). Earn
-                        rewards while you stream.
-                      </p>
+                      <p className="text-[14px] font-bold text-white uppercase italic">3.5% APR Yield</p>
+                      <p className="text-[9px] text-neutral-500 leading-relaxed uppercase font-bold tracking-tight">Funds are held in the secure Tipfy Vault (Aave V3). Earn rewards while you stream.</p>
                     </div>
                   </button>
                 </>
@@ -139,28 +107,18 @@ export const PayoutView = ({
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest flex items-center gap-2">
-              Receiver Wallet Address
-            </label>
-
+            <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest flex items-center gap-2">Receiver Wallet Address</label>
             <form.Field
               name="payoutAddress"
               children={(field) => (
-                <>
-                  <input
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    className={`w-full bg-black border ${field.state.meta.errors.length ? 'border-neon-pink' : 'border-white/10'} p-4 font-mono text-xs text-white focus:border-neon-cyan focus:outline-none transition-colors skew-x--5`}
-                    placeholder="0x..."
-                  />
-                  {field.state.meta.errors.length > 0 && (
-                    <p className="text-[8px] font-bold text-neon-pink uppercase mt-2 tracking-widest">
-                      {field.state.meta.errors.join(', ')}
-                    </p>
-                  )}
-                </>
+                <input
+                  name={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  className="w-full bg-black border border-white/10 p-4 font-mono text-xs text-white focus:border-neon-cyan focus:outline-none transition-colors skew-x--5"
+                  placeholder="0x..."
+                />
               )}
             />
           </div>
@@ -172,19 +130,42 @@ export const PayoutView = ({
           >
             <span className="skew-x-10 flex items-center gap-2">
               {(form.state.isSubmitting || isTxPending || isConfirming) && <Loader2 className="animate-spin" size={16} />}
-              {form.state.isSubmitting || isTxPending || isConfirming
-                ? 'Syncing_Protocols...'
-                : 'Save Configuration'}
+              {form.state.isSubmitting || isTxPending || isConfirming ? 'Syncing_Protocols...' : 'Save Configuration'}
             </span>
           </button>
 
           {success && (
-            <p className="text-center text-[10px] font-black text-green-500 uppercase animate-pulse mt-4">
-              Transmission protocols updated successfully!
-            </p>
+            <p className="text-center text-[10px] font-black text-green-500 uppercase animate-pulse mt-4">Transmission protocols updated successfully!</p>
           )}
         </div>
       </form>
     </div>
   )
+}
+
+export const PayoutView = ({ initialAddress, initialStaking }: any) => {
+  const [Web3, setWeb3] = useState<any>(null)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const { useWriteContract, useWaitForTransactionReceipt } = await import('wagmi')
+        setWeb3({ useWriteContract, useWaitForTransactionReceipt })
+      } catch (e) {
+        console.error('PayoutView Web3 Load failed', e)
+      }
+    }
+    load()
+  }, [])
+
+  if (!Web3) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+        <Zap size={40} className="text-zinc-800 animate-pulse" />
+        <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.4em]">Initializing_Safe_Vault...</p>
+      </div>
+    )
+  }
+
+  return <PayoutViewInner initialAddress={initialAddress} initialStaking={initialStaking} Web3={Web3} />
 }

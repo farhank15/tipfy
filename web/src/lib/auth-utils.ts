@@ -7,19 +7,23 @@ export const checkProfileServerFn = createServerFn({ method: 'GET' })
   })
 
 export const getPublicProfileServerFn = createServerFn({ method: 'GET' })
-  .handler(async ({ data: username }) => {
+  .handler(async ({ data: identifier }) => {
     const { db } = await import('#/db/index')
     
     try {
+      // Cari berdasarkan slug (username) ATAU walletAddress
       const userProfile = await db.query.profile.findFirst({
-        where: (p: any, { eq }: any) => eq(p.slug, username),
+        where: (p: any, { eq, or }: any) => or(
+          eq(p.slug, identifier),
+          eq(p.walletAddress, identifier)
+        ),
         with: {
           payoutSettings: true,
         },
       })
 
       if (!userProfile) {
-        console.warn(`[ServerFn] Profile not found for slug: ${username}`)
+        console.warn(`[ServerFn] Profile not found for identifier: ${identifier}`)
         return null
       }
 
@@ -37,7 +41,7 @@ export const getPublicProfileServerFn = createServerFn({ method: 'GET' })
       console.error('[ServerFn Error Details]:', {
         message: e.message,
         stack: e.stack,
-        username
+        identifier
       })
       return null
     }

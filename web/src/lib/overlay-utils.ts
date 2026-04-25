@@ -2,6 +2,51 @@ import { createServerFn } from '@tanstack/react-start'
 import { eq, and, desc } from 'drizzle-orm'
 import crypto from 'node:crypto'
 
+export const recordDonationServerFn = createServerFn({
+  method: 'POST',
+}).handler(async ({ data: { txHash, sender, receiverId, amount, message } }) => {
+    const { db } = await import('#/db/index')
+    const { donation, profile } = await import('#/db/schema')
+    const { getAblyInstance } = await import('./ably-utils')
+
+    try {
+      // 1. Get user address for channel naming
+      const userProfile = await db.query.profile.findFirst({
+        where: eq(profile.id, receiverId),
+      })
+      if (!userProfile) throw new Error('Receiver not found')
+
+      // 2. Save to database
+      await db.insert(donation).values({
+        profileId: receiverId,
+        amount: amount.toString(),
+        senderName: sender.length === 42 ? 'Anonymous' : sender,
+        senderAddress: sender.length === 42 ? sender : null,
+        message,
+        txHash,
+        status: 'SUCCESS',
+      })
+
+      // 3. Trigger Overlay via Ably
+      const ably = getAblyInstance()
+      const channel = ably.channels.get(`donations:${userProfile.walletAddress}`)
+      
+      await channel.publish('new-donation', {
+        id: crypto.randomUUID(),
+        senderName: sender.length === 42 ? `${sender.slice(0, 6)}...${sender.slice(-4)}` : sender,
+        amount: amount.toString(),
+        currency: 'MON',
+        message,
+        timestamp: Date.now(),
+      })
+
+      return { success: true }
+    } catch (e) {
+      console.error('[RecordDonation Error]:', e)
+      throw e
+    }
+  })
+
 export const getOverlayConfigServerFn = createServerFn({
   method: 'GET',
 }).handler(async ({ data: { type } }) => {
@@ -104,42 +149,6 @@ export const getLeaderboardServerFn = createServerFn({
     const { getLeaderboardData } = await import('./db-actions.server')
     return await getLeaderboardData(profileId, timeRange, startDate)
   })
-
-export const uploadToBucketServerFn = createServerFn({
-  method: 'POST',
-}).handler(async (ctx: any): Promise<any> => {
-  const formData = ctx.data as FormData
-  const file = formData.get('file') as File
-  if (!file) throw new Error('No file provided')
-
-  const { Storage } = await import('@google-cloud/storage')
-  const { env } = await import('../env')
-
-  console.log('[DEBUG GCS]: Target Bucket ->', env.GCS_BUCKET_NAME)
-  console.log('[DEBUG GCS]: Credentials Path ->', env.GOOGLE_APPLICATION_CREDENTIALS)
-
-  const storage = new Storage()
-  const bucket = storage.bucket(env.GCS_BUCKET_NAME)
-
-  const uniqueId = crypto.randomUUID()
-  const fileName = `${uniqueId}-${file.name.replace(/\s+/g, '_')}`
-  const gcsFile = bucket.file(`uploads/${fileName}`)
-
-  const arrayBuffer = await file.arrayBuffer()
-  const buffer = Buffer.from(arrayBuffer)
-
-  await gcsFile.save(buffer, {
-    metadata: { contentType: file.type },
-    resumable: false,
-  })
-
-  const publicUrl = `https://storage.googleapis.com/${env.GCS_BUCKET_NAME}/uploads/${fileName}`
-
-  return {
-    url: publicUrl,
-    name: file.name,
-  }
-})
 
 export const seedDefaultOverlays = async (profileId: number) => {
   try {
