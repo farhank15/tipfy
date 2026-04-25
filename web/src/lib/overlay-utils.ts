@@ -180,8 +180,61 @@ export const getVotingResultsServerFn = createServerFn({ method: 'GET' })
     return await getVotingResults(votingId)
   })
 
-export const getLeaderboardDataServerFn = createServerFn({ method: 'GET' })
+export const getLeaderboardServerFn = createServerFn({ method: 'GET' })
   .handler(async (ctx: { data: { profileId: number; timeRange: string; startDate?: string } }) => {
     const { getLeaderboardData } = await import('./db-actions.server')
     return await getLeaderboardData(ctx.data.profileId, ctx.data.timeRange, ctx.data.startDate)
   })
+
+export const seedDefaultOverlays = async (profileId: number) => {
+  try {
+    const { db } = await import('#/db/index')
+    const { overlayConfigs } = await import('#/db/schema')
+    
+    const defaults = [
+      {
+        type: 'ALERT',
+        config: {
+          backgroundColor: '#00000000',
+          textColor: '#ffffff',
+          highlightColor: '#00f3ff',
+          duration: 5000,
+          ttsEnabled: true,
+          mediaEnabled: true,
+        }
+      },
+      {
+        type: 'GOAL',
+        config: {
+          title: 'Donation Goal',
+          target: 1000,
+          highlightColor: '#00f3ff',
+          textColor: '#ffffff',
+        }
+      },
+      {
+        type: 'LEADERBOARD',
+        config: {
+          title: 'Top Supporters',
+          timeRange: 'ALL',
+          highlightColor: '#00f3ff',
+          textColor: '#ffffff',
+        }
+      }
+    ]
+
+    for (const d of defaults) {
+      await db.insert(overlayConfigs).values({
+        profileId,
+        type: d.type,
+        config: d.config,
+        isEnabled: true
+      })
+    }
+    
+    return { success: true }
+  } catch (err) {
+    console.error('seedDefaultOverlays error:', err)
+    return { success: false }
+  }
+}
